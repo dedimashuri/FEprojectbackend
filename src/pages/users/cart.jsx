@@ -28,28 +28,6 @@ class Cart extends Component {
       .catch((err) => {
         console.log(err);
       });
-    // var arr = [];
-    // var cart = this.props.dataUser.cart;
-    // cart.forEach((val) => {
-    //   arr.push(axios.get(`${API_URL}/products/${val.id}`));
-    // });
-    // console.log(cart, "32");
-    // Promise.all(arr)
-    //   .then((res) => {
-    //     console.log(res);
-    //     var newarr = [];
-    //     res.forEach((val) => {
-    //       newarr.push({ id: val.data.id, stokadmin: val.data.stok });
-    //     });
-    //     console.log(newarr);
-    //     this.setState({ stokadmin: newarr });
-    //   })
-    //   .catch((err) => {
-    //     console.log(err);
-    //   })
-    //   .finally(() => {
-    //     this.setState({ loading: false });
-    //   });
   }
 
   onMinusClick = (index) => {
@@ -211,53 +189,7 @@ class Cart extends Component {
     this.setState({ modal: false });
   };
 
-  //? cara dengan promise.all dan untuk membuat disable button
 
-  // onCheckoutClick = () => {
-  //   console.log(this.state);
-  //   let iduser = this.props.dataUser.id;
-  //   // data input to transaksi
-  //   let data = {
-  //     userId: this.props.dataUser.id,
-  //     tanggal: new Date(),
-  //     status: "belum bayar",
-  //     products: this.props.dataUser.cart,
-  //     bankId: 0,
-  //     bukti: "",
-  //   };
-
-  //   axios
-  //     .post(`${API_URL}/transactions`, data)
-  //     .then(() => {
-  //       axios
-  //         .patch(`${API_URL}/users/${iduser}`, { cart: [] })
-  //         .then((res1) => {
-  //           var stokadmin = this.state.stokadmin;
-  //           var cart = this.props.dataUser.cart;
-  //           var stokfetch = stokadmin.map((val, index) => {
-  //             // stockfetch type datanya adalah array
-  //             let stokakhir = val.stokadmin - cart[index].qty;
-  //             return axios.patch(`${API_URL}/products/${val.id}`, {
-  //               stok: stokakhir,
-  //             });
-  //           });
-  //           Promise.all(stokfetch)
-  //             .then(() => {
-  //               this.props.CartAction(res1.data.cart);
-  //               this.setState({ modal: false });
-  //             })
-  //             .catch((err) => {
-  //               console.log(err);
-  //             });
-  //         })
-  //         .catch((err) => {
-  //           console.log(err);
-  //         });
-  //     })
-  //     .catch((err) => {
-  //       console.log(err);
-  //     });
-  // };
 
   rendertotal = () => {
     let total = 0;

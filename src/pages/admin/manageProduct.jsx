@@ -11,6 +11,7 @@ import {
   Button as ButtonStrap,
   Pagination,
   PaginationItem,
+  CustomInput,
 } from "reactstrap";
 import axios from "axios";
 import { API_URL, currencyFormatter } from "../../helper";
@@ -26,12 +27,14 @@ class ManageProduct extends Component {
     products: [],
     AddData: {
       name: "",
-      image: "",
       tahun: "",
       harga: "",
       deskripsi: "",
       categoryId: 0,
+      qty: "",
     },
+    addimage: null,
+    addimage_detail: [null],
     categories: [],
     modalAdd: false,
     page: 1,
@@ -43,13 +46,12 @@ class ManageProduct extends Component {
 
   componentDidMount() {
     axios
-      .get(
-        `${API_URL}/products?_expand=category&_page=${this.state.page}&_limit=5 `
-      )
+      .get(`${API_URL}/product/admin?pages=${this.state.page}&limit=5 `)
       .then((res) => {
         axios
-          .get(`${API_URL}/categories`)
+          .get(`${API_URL}/product/category`)
           .then((res1) => {
+            console.log(res1, "category");
             this.setState({
               products: res.data,
               categories: res1.data,
@@ -105,12 +107,18 @@ class ManageProduct extends Component {
           <td width="100px">{x + index + 1}</td>
           <td width="100px">{val.name}</td>
           <td width="200px">
-            <img src={val.image} alt={val.name} width="200px" height="150px" />
+            <img
+              src={API_URL + val.image}
+              alt={val.name}
+              width="200px"
+              height="150px"
+            />
           </td>
           <td width="50px">{val.tahun}</td>
-          <td width="150px">{currencyFormatter(val.harga)}</td>
-          <td width="120px">{val.category.nama}</td>
-          <td>{val.deskripsi}</td>
+          <td width="150px">{currencyFormatter(val.price)}</td>
+          <td width="120px">{val.namacategory}</td>
+          <td width="120px">{val.qty}</td>
+          <td>{val.description}</td>
           <td>
             <span className="mx-2 text-primary">
               <FaEdit />
@@ -131,7 +139,7 @@ class ManageProduct extends Component {
     return this.state.categories.map((val, index) => {
       return (
         <option value={val.id} key={index}>
-          {val.nama}
+          {val.name}
         </option>
       );
     });
@@ -158,6 +166,50 @@ class ManageProduct extends Component {
     }
     return paging;
   };
+  renderInput = () => {
+    return this.state.addimage_detail.map((val, index) => {
+      if (index === this.state.addimage_detail.length - 1) {
+        return (
+          <div>
+            {val ? (
+              <img src={URL.createObjectURL(val)} alt="foto" height="200px" />
+            ) : null}
+            <InputGroup key={index}>
+              <input
+                className="my-1 form-control"
+                type="file"
+                onChange={(e) => this.onAddDetailFileChange(e, index)}
+              />
+              <button className="btn btn-success" onClick={this.onTambahFile}>
+                +
+              </button>
+            </InputGroup>
+          </div>
+        );
+      } else if (this.state.addimage_detail.length != 1) {
+        return (
+          <div>
+            {val ? (
+              <img src={URL.createObjectURL(val)} alt="foto" height="200px" />
+            ) : null}
+            <InputGroup key={index}>
+              <input
+                className="my-1 form-control"
+                type="file"
+                onChange={(e) => this.onAddDetailFileChange(e, index)}
+              />
+              <button
+                className="btn btn-danger"
+                onClick={() => this.onHapusFile(index)}
+              >
+                X
+              </button>
+            </InputGroup>
+          </div>
+        );
+      }
+    });
+  };
 
   toggle = () => {
     this.setState({ modalAdd: !this.state.modalAdd });
@@ -169,39 +221,55 @@ class ManageProduct extends Component {
     this.setState({ AddData: AddDatamute });
   };
 
+  onAddFileChange = (e) => {
+    console.log(e.target.files);
+    if (e.target.files[0]) {
+      this.setState({
+        addimage: e.target.files[0],
+      });
+    } else {
+      // let newAdddata = { ...this.state.AddData, image: null };
+      this.setState({ addimage: null });
+    }
+  };
+
   onAddDataClick = () => {
-    const {
-      name,
-      categoryId,
-      deskripsi,
-      harga,
-      tahun,
-      image,
-    } = this.state.AddData;
-    var dataPost = this.state.AddData;
+    const { name, categoryId, deskripsi, harga, tahun } = this.state.AddData;
+    const image = this.state.addimage;
+    let image_detail = this.state.addimage_detail;
+    let dataPost = this.state.AddData;
     if (name && categoryId && deskripsi && harga && tahun && image) {
+      let formData = new FormData();
+      formData.append("data", JSON.stringify(dataPost));
+      formData.append("imagebg", image);
+      image_detail = image_detail.filter((val) => val != null);
+      image_detail.forEach((val) => {
+        formData.append("imagedetail", val);
+      });
       axios
-        .post(`${API_URL}/products`, dataPost) //* datapost sudah object param ke 2 harus obj
-        .then((res1) => {
-          console.log(res1);
+        .post(`${API_URL}/product/admin`, formData, {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        })
+        .then((res) => {
+          console.log(res.data);
           axios
-            .get(
-              `${API_URL}/products?_expand=category&_page=${this.state.page}&_limit=5`
-            )
-            .then((res) => {
-              var obj = {
-                name: "",
-                image: "",
-                tahun: "",
-                harga: "",
-                deskripsi: "",
-                categoryId: 0,
-              };
+            .get(`${API_URL}/product/admin?pages=${this.state.page}&limit=5 `)
+            .then((res1) => {
               this.setState({
-                products: res.data,
-                totaldata: res.headers["x-total-count"],
+                products: res1.data,
                 modalAdd: false,
-                AddData: obj,
+                totaldata: res1.headers["x-total-count"],
+                addimage: null,
+                addimage_detail: [null],
+                AddData: {
+                  name: "",
+                  tahun: "",
+                  harga: "",
+                  deskripsi: "",
+                  categoryId: 0,
+                },
               });
             })
             .catch((err) => {
@@ -217,7 +285,7 @@ class ManageProduct extends Component {
   };
 
   OnDeleteClick = (index) => {
-    let id = this.state.products[index].id;
+    let id = this.state.products[index].idproducts;
     let namaProd = this.state.products[index].name;
     Myswal.fire({
       title: `Are you sure wanna Delete ${namaProd} ?`,
@@ -230,19 +298,15 @@ class ManageProduct extends Component {
     }).then((result) => {
       if (result.isConfirmed) {
         axios
-          .delete(`${API_URL}/products/${id}`)
+          .delete(`${API_URL}/product/admin/${id}`)
           .then(() => {
             axios
-              .get(
-                `${API_URL}/products?_expand=category&_page=${this.state.page}&_limit=5`
-              )
-              .then((res) => {
-                this.setState({ products: res.data });
-                Myswal.fire(
-                  "Deleted!",
-                  "Your file has been deleted.",
-                  "success"
-                );
+              .get(`${API_URL}/product/admin?pages=${this.state.page}&limit=5 `)
+              .then((res1) => {
+                this.setState({
+                  products: res1.data,
+                  totaldata: res1.headers["x-total-count"],
+                });
               })
               .catch((err) => {
                 console.log(err);
@@ -272,6 +336,28 @@ class ManageProduct extends Component {
         console.log(err);
       });
   };
+  onAddDetailFileChange = (e, index) => {
+    console.log(e.target.files);
+    let addfileDetail = this.state.addimage_detail;
+    if (e.target.files[0]) {
+      addfileDetail.splice(index, 1, e.target.files[0]);
+    } else {
+      addfileDetail.splice(index, 1, null);
+    }
+    this.setState({
+      addimage_detail: addfileDetail,
+    });
+  };
+  onTambahFile = () => {
+    let initfile = this.state.addimage_detail;
+    initfile.push(null);
+    this.setState({ addimage_detail: initfile });
+  };
+  onHapusFile = (index) => {
+    let initfile = this.state.addimage_detail;
+    initfile.splice(index, 1);
+    this.setState({ addimage_detail: initfile });
+  };
 
   render() {
     if (this.props.dataUser.role !== "admin") {
@@ -288,7 +374,12 @@ class ManageProduct extends Component {
     return (
       <div>
         <Header />
-        <Modal size="lg" isOpen={this.state.modalAdd} toggle={this.toggle}>
+        <Modal
+          size="xl"
+          scrollable
+          isOpen={this.state.modalAdd}
+          toggle={this.toggle}
+        >
           <ModalHeader className="warna" toggle={this.toggle}>
             Add Data
           </ModalHeader>
@@ -301,13 +392,20 @@ class ManageProduct extends Component {
               placeholder="Nama Product"
               onChange={this.onAddDataChange}
             />
-            <input
-              className="form-control my-1"
-              type="text"
-              name="image"
-              placeholder="Foto"
-              value={this.state.AddData.image}
-              onChange={this.onAddDataChange}
+            {this.state.addimage ? (
+              <img
+                src={URL.createObjectURL(this.state.addimage)}
+                alt="foto"
+                height="200px"
+              />
+            ) : null}
+            <CustomInput
+              className="my-1"
+              label={
+                this.state.addimage ? this.state.addimage.filename : "no file"
+              }
+              type="file"
+              onChange={this.onAddFileChange}
             />
             <input
               className="form-control my-1"
@@ -315,6 +413,14 @@ class ManageProduct extends Component {
               name="tahun"
               placeholder="Tahun"
               value={this.state.AddData.tahun}
+              onChange={this.onAddDataChange}
+            />
+            <input
+              className="form-control my-1"
+              type="number"
+              name="qty"
+              placeholder="qty"
+              value={this.state.AddData.qty}
               onChange={this.onAddDataChange}
             />
             <InputGroup>
@@ -339,6 +445,7 @@ class ManageProduct extends Component {
               </option>
               {this.renderCategories()}
             </select>
+            <div className="d-flex">{this.renderInput()}</div>
             <textarea
               className="form-control my-1"
               name="deskripsi"
@@ -381,6 +488,7 @@ class ManageProduct extends Component {
                 <th>Thn</th>
                 <th>Harga</th>
                 <th>Category</th>
+                <th>qty</th>
                 <th>Deskripsi</th>
                 <th>Action</th>
               </tr>
