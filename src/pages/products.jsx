@@ -20,7 +20,7 @@ class Products extends Component {
   };
   componentDidMount() {
     axios
-      .get(`${API_URL}/products?_expand=category`)
+      .get(`${API_URL}/product?pages=1&limit=10`)
       .then((res) => {
         this.setState({ products: res.data });
       })
@@ -37,17 +37,20 @@ class Products extends Component {
             <CardImg
               top
               width="100%"
-              src={val.image}
+              src={API_URL + val.image}
               alt="Card image cap"
               height="200vh"
             />
             <CardBody>
               <CardTitle tag="h5">{val.name}</CardTitle>
               <CardSubtitle tag="h6" className="mb-2 text-muted">
-                {currencyFormatter(val.harga)}
+                {currencyFormatter(val.price)}
               </CardSubtitle>
               <Link
-                to={{ pathname: `/product/${val.id}`, state: { product: val } }}
+                to={{
+                  pathname: `/product/${val.idproducts}`,
+                  state: { product: val },
+                }}
               >
                 <Button className="w-100 py-2">Details</Button>
               </Link>
@@ -64,13 +67,16 @@ class Products extends Component {
         <Header />
         <div className="container">
           <div className="bg-transparent mt-5">
-            <Breadcrumb className=" bg-transparent">
+            <Breadcrumb style={{ background: "none" }}>
               <BreadcrumbItem>
-                <Link to="/">Home</Link>
+                <Link style={{ color: "black" }} to="/">
+                  Home
+                </Link>
               </BreadcrumbItem>
               <BreadcrumbItem active>Product</BreadcrumbItem>
             </Breadcrumb>
           </div>
+
           <div>
             <form>
               <input

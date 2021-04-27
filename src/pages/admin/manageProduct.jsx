@@ -71,9 +71,7 @@ class ManageProduct extends Component {
   componentDidUpdate(prevprops, prevstate) {
     if (this.state.page !== prevstate.page) {
       axios
-        .get(
-          `${API_URL}/products?_expand=category&_page=${this.state.page}&_limit=5 `
-        )
+        .get(`${API_URL}/product/admin?pages=${this.state.page}&limit=5 `)
         .then((res) => {
           this.setState({
             products: res.data,

@@ -14,14 +14,14 @@ class Home extends Component {
   };
 
   componentDidMount() {
-    axios
-      .get(`${API_URL}/products?_limit=4&_expand=category`)
-      .then((res) => {
-        this.setState({ data: res.data });
-      })
-      .catch((err) => {
-        console.log(err);
-      });
+    // axios
+    //   .get(`${API_URL}/products?_limit=4&_expand=category`)
+    //   .then((res) => {
+    //     this.setState({ data: res.data });
+    //   })
+    //   .catch((err) => {
+    //     console.log(err);
+    //   });
   }
 
   renderProducts = () => {

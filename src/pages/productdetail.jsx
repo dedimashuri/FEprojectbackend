@@ -21,7 +21,7 @@ class ProductDetail extends Component {
     var data = this.props.location.state;
     if (!data) {
       axios
-        .get(`${API_URL}/products/${idprod}?_expand=category`)
+        .get(`${API_URL}/product/${idprod}`)
         .then((res) => {
           this.setState({ product: res.data });
         })
@@ -39,7 +39,7 @@ class ProductDetail extends Component {
   onQtyClick = (operator) => {
     if (operator === "tambah") {
       var hasil = this.state.qty + 1;
-      if (hasil > this.state.product.stok) {
+      if (hasil > this.state.product.qty) {
         alert("melebihi stock");
       } else {
         this.setState({ qty: this.state.qty + 1 });
@@ -61,63 +61,105 @@ class ProductDetail extends Component {
     ) {
       alert(" tidak boleh beli");
     } else {
-      let id = this.props.dataUser.id;
-      let idprod = this.state.product.id;
-      let stok = this.state.product.stok;
+      let idusers = this.props.dataUser.idusers;
+      let idprod = this.state.product.idproducts;
+      let qty = this.state.qty;
+      let TokenAccess = localStorage.getItem("TA");
+      console.log(TokenAccess);
+      let data = {
+        idusers,
+        idprod,
+        qty,
+      };
+      let options = {
+        headers: {
+          Authorization: "Bearer " + TokenAccess,
+        },
+      };
       axios
-        .get(`${API_URL}/users/${id}`)
+        .post(`${API_URL}/trans/cart`, data, options)
         .then((res) => {
-          var cart = res.data.cart; //cart adalah array
-
-          let findIdx = cart.findIndex((val) => val.id == idprod);
-          if (findIdx < 0) {
-            let data = {
-              ...this.state.product,
-              qty: this.state.qty,
-            };
-            // rekayasa array
-            cart.push(data);
-            // update data
-            axios
-              .patch(`${API_URL}/users/${id}`, { cart: cart }) // expektasi data yang dikrim harus object
-              .then((res1) => {
-                console.log(res1.data);
-                this.props.CartAction(res1.data.cart);
-                alert("cart berhasil");
-              })
-              .catch((err) => {
-                console.log(err);
-              });
-          } else {
-            let qtyakhir = cart[findIdx].qty + this.state.qty; //4 //2
-            if (qtyakhir > stok) {
-              // rekayasa array
-              var qtyablebuy = stok - cart[findIdx].qty;
-              alert(
-                "barang dicart melebihi stok barang yang bisa dibeli hanya " +
-                  qtyablebuy
-              );
-            } else {
-              cart[findIdx].qty = qtyakhir; //?cart adalah array karena di db.json itu array
-              axios
-                .patch(`${API_URL}/users/${id}`, { cart: cart }) // ?ekspektasi data yang dikrim harus object
-                .then((res1) => {
-                  console.log(res1.data);
-                  this.props.CartAction(res1.data.cart);
-                  alert("cart berhasil");
-                })
-                .catch((err) => {
-                  console.log(err);
-                });
-            }
-          }
+          console.log(res.data);
+          this.props.CartAction(res.data);
+          alert("berhasil");
         })
         .catch((err) => {
           console.log(err);
+          alert(err.response.data.message);
         });
+      // let stok = this.state.product.stok;
+      // axios
+      //   .get(`${API_URL}/users/${id}`)
+      //   .then((res) => {
+      //     var cart = res.data.cart; //cart adalah array
+
+      //     let findIdx = cart.findIndex((val) => val.id == idprod);
+      //     if (findIdx < 0) {
+      //       let data = {
+      //         ...this.state.product,
+      //         qty: this.state.qty,
+      //       };
+      //       // rekayasa array
+      //       cart.push(data);
+      //       // update data
+      //       axios
+      //         .patch(`${API_URL}/users/${id}`, { cart: cart }) // expektasi data yang dikrim harus object
+      //         .then((res1) => {
+      //           console.log(res1.data);
+      //           this.props.CartAction(res1.data.cart);
+      //           alert("cart berhasil");
+      //         })
+      //         .catch((err) => {
+      //           console.log(err);
+      //         });
+      //     } else {
+      //       let qtyakhir = cart[findIdx].qty + this.state.qty; //4 //2
+      //       if (qtyakhir > stok) {
+      //         // rekayasa array
+      //         var qtyablebuy = stok - cart[findIdx].qty;
+      //         alert(
+      //           "barang dicart melebihi stok barang yang bisa dibeli hanya " +
+      //             qtyablebuy
+      //         );
+      //       } else {
+      //         cart[findIdx].qty = qtyakhir; //?cart adalah array karena di db.json itu array
+      //         axios
+      //           .patch(`${API_URL}/users/${id}`, { cart: cart }) // ?ekspektasi data yang dikrim harus object
+      //           .then((res1) => {
+      //             console.log(res1.data);
+      //             this.props.CartAction(res1.data.cart);
+      //             alert("cart berhasil");
+      //           })
+      //           .catch((err) => {
+      //             console.log(err);
+      //           });
+      //       }
+      //     }
+      //   })
+      //   .catch((err) => {
+      //     console.log(err);
+      //   });
     }
   };
 
+  renderImage_detail = () => {
+    const image_Detail = JSON.parse(this.state.product.image_detail);
+    console.log(image_Detail);
+    if (image_Detail) {
+      return image_Detail.map((val, index) => {
+        return (
+          <img
+            key={index}
+            src={API_URL + val}
+            alt="product"
+            width="20%"
+            className="mx-3"
+            height="80px"
+          />
+        );
+      });
+    }
+  };
   render() {
     if (this.state.loading) {
       return <Loading />;
@@ -141,11 +183,12 @@ class ProductDetail extends Component {
           <div className="row mt-2">
             <div className="col-md-6 shadow">
               <img
-                src={this.state.product.image}
+                src={API_URL + this.state.product.image}
                 alt="product"
                 width="100%"
                 height="400vh"
               />
+              <div className="my-3">{this.renderImage_detail()}</div>
             </div>
             <div className="col-md-6">
               <div className=" display-4 my-2">{this.state.product.name}</div>
@@ -153,13 +196,13 @@ class ProductDetail extends Component {
                 {this.state.product.tahun}
               </div>
               <div className="my-2" style={{ fontSize: "30px" }}>
-                {this.state.product.category.nama}
+                {this.state.product.namacategory}
               </div>
               <div
                 className="font-weight-bold my-2"
                 style={{ fontSize: "35px" }}
               >
-                {currencyFormatter(this.state.product.harga * this.state.qty)}
+                {currencyFormatter(this.state.product.price * this.state.qty)}
               </div>
               <div className="d-flex">
                 <Button
