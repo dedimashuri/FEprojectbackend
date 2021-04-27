@@ -18,16 +18,16 @@ class History extends Component {
   };
   async componentDidMount() {
     try {
-      var res = await axios.get(`${API_URL}/banks`);
+      // var res = await axios.get(`${API_URL}/banks`);
       var res1 = await axios.get(
-        `${API_URL}/transactions?userId=${this.props.dataUser.id}`
+        `${API_URL}/trans/history/${this.props.dataUser.idusers}`
       );
       // get data semua products
-      var res2 = await axios.get(`${API_URL}/products`);
+      // var res2 = await axios.get(`${API_URL}/products`);
       this.setState({
-        banks: res.data,
+        // banks: res.data,
         history: res1.data,
-        products: res2.data,
+        // products: res2.data,
       });
     } catch (error) {
       console.log(error);
@@ -47,7 +47,7 @@ class History extends Component {
     let total = 0;
 
     this.state.history[this.state.indexdetail].products.forEach((val) => {
-      total += val.harga * val.qty;
+      total += val.price * val.qty;
     });
 
     return total;
@@ -158,7 +158,7 @@ class History extends Component {
       return (
         <tr key={index}>
           <td>{index + 1}</td>
-          <td>{formatDate(val.tanggal)}</td>
+          <td>{formatDate(val.update_on)}</td>
           <td>{val.status}</td>
           <td>
             <button

@@ -2,6 +2,7 @@ const INITIAL_STATE = {
   idusers: 0,
   username: "",
   role: "",
+  isverified: 0,
   islogin: false,
   loading: false,
   error: "",

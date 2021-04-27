@@ -19,6 +19,7 @@ class ProductDetail extends Component {
   componentDidMount() {
     var idprod = this.props.match.params.idprod;
     var data = this.props.location.state;
+
     if (!data) {
       axios
         .get(`${API_URL}/product/${idprod}`)
@@ -57,7 +58,8 @@ class ProductDetail extends Component {
   onAddToCartClick = () => {
     if (
       this.props.dataUser.role === "admin" ||
-      this.props.dataUser.islogin === false
+      this.props.dataUser.islogin === false ||
+      !this.props.dataUser.isverified
     ) {
       alert(" tidak boleh beli");
     } else {

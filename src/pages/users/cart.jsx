@@ -20,28 +20,62 @@ class Cart extends Component {
 
   componentDidMount() {
     // * get data products
-    axios
-      .get(`${API_URL}/products`)
-      .then((res) => {
-        this.setState({ products: res.data });
-      })
-      .catch((err) => {
-        console.log(err);
-      });
+    console.log(this.props.dataUser.cart);
+    // axios
+    //   .get(`${API_URL}/products`)
+    //   .then((res) => {
+    //     this.setState({ products: res.data });
+    //   })
+    //   .catch((err) => {
+    //     console.log(err);
+    //   });
+    // var arr = [];
+    // var cart = this.props.dataUser.cart;
+    // cart.forEach((val) => {
+    //   arr.push(axios.get(`${API_URL}/products/${val.id}`));
+    // });
+    // console.log(cart, "32");
+    // Promise.all(arr)
+    //   .then((res) => {
+    //     console.log(res);
+    //     var newarr = [];
+    //     res.forEach((val) => {
+    //       newarr.push({ id: val.data.id, stokadmin: val.data.stok });
+    //     });
+    //     console.log(newarr);
+    //     this.setState({ stokadmin: newarr });
+    //   })
+    //   .catch((err) => {
+    //     console.log(err);
+    //   })
+    //   .finally(() => {
+    //     this.setState({ loading: false });
+    //   });
   }
 
   onMinusClick = (index) => {
     let cart = this.props.dataUser.cart;
-    let hasil = cart[index].qty - 1;
-    if (hasil < 1) {
-      alert("delete saja jika qty ingin 0");
+    let id = cart[index].id;
+    let qty = cart[index].qty;
+    let qtyakhir = qty - 1;
+    let idusers = this.props.dataUser.idusers;
+    let TokenAccess = localStorage.getItem("TA");
+    let options = {
+      headers: {
+        Authorization: "Bearer " + TokenAccess,
+      },
+    };
+    if (qtyakhir < 1) {
+      toast.error("delete saja jika qty ingin 0");
     } else {
-      cart[index].qty = cart[index].qty - 1;
-      let iduser = this.props.dataUser.id;
+      let data = {
+        idusers: idusers,
+        qty: qtyakhir,
+      };
       axios
-        .patch(`${API_URL}/users/${iduser}`, { cart: cart })
+        .patch(`${API_URL}/trans/cart/qty/${id}`, data, options)
         .then((res) => {
-          this.props.CartAction(res.data.cart);
+          this.props.CartAction(res.data);
         })
         .catch((err) => {
           console.log(err);
@@ -52,32 +86,33 @@ class Cart extends Component {
   onPlusClick = (index) => {
     // ambil data product dulu dengan id dari index
     let cart = this.props.dataUser.cart;
-    let idprod = cart[index].id;
-    axios
-      .get(`${API_URL}/products/${idprod}`)
-      .then((res) => {
-        let stok = res.data.stok;
-        let qty = cart[index].qty;
-        let hasil = qty + 1;
-        if (hasil > stok) {
-          toast.error("qty melebihi " + stok);
-        } else {
-          cart[index].qty = hasil;
-          let iduser = this.props.dataUser.id;
-          // refresh cart
-          axios
-            .patch(`${API_URL}/users/${iduser}`, { cart: cart })
-            .then((res) => {
-              this.props.CartAction(res.data.cart);
-            })
-            .catch((err) => {
-              console.log(err);
-            });
-        }
-      })
-      .catch((err) => {
-        console.log(err);
-      });
+    let id = cart[index].id;
+    let stock = cart[index].stock;
+    let qty = cart[index].qty;
+    let qtyakhir = qty + 1;
+    let idusers = this.props.dataUser.idusers;
+    let TokenAccess = localStorage.getItem("TA");
+    let options = {
+      headers: {
+        Authorization: "Bearer " + TokenAccess,
+      },
+    };
+    if (qtyakhir > stock) {
+      toast.error("qty melebihi stock max stock = " + stock);
+    } else {
+      let data = {
+        idusers: idusers,
+        qty: qtyakhir,
+      };
+      axios
+        .patch(`${API_URL}/trans/cart/qty/${id}`, data, options)
+        .then((res) => {
+          this.props.CartAction(res.data);
+        })
+        .catch((err) => {
+          console.log(err);
+        });
+    }
   };
 
   onDeleteClick = (index) => {
@@ -93,15 +128,19 @@ class Cart extends Component {
       confirmButtonText: "Yes, delete it!",
     }).then((result) => {
       if (result.isConfirmed) {
-        // edit cart
-        cart.splice(index, 1);
-        let iduser = this.props.dataUser.id;
+        let id = cart[index].id;
+        let idusers = this.props.dataUser.idusers;
+        let TokenAccess = localStorage.getItem("TA");
+        let options = {
+          headers: {
+            Authorization: "Bearer " + TokenAccess,
+          },
+        };
         // refresh cart
         axios
-          .patch(`${API_URL}/users/${iduser}`, { cart: cart })
+          .delete(`${API_URL}/trans/deletecart/${id}/${idusers}`, options)
           .then((res) => {
-            this.props.CartAction(res.data.cart);
-            Myswal.fire("Deleted!", "Your Cart has been deleted.", "success");
+            this.props.CartAction(res.data);
           })
           .catch((err) => {
             console.log(err);
@@ -117,9 +156,14 @@ class Cart extends Component {
           <td>{index + 1}</td>
           <td>{val.name}</td>
           <td>
-            <img src={val.image} alt={val.name} width="200px" height="150px" />
+            <img
+              src={API_URL + val.image}
+              alt={val.name}
+              width="200px"
+              height="150px"
+            />
           </td>
-          <td>{currencyFormatter(val.harga)}</td>
+          <td>{currencyFormatter(val.price)}</td>
           <td>
             <button
               className="btn btn-danger mx-2"
@@ -132,15 +176,13 @@ class Cart extends Component {
             <button
               className="btn btn-success mx-2"
               //   disabled={v}
-              // disabled={
-              //   val.qty >= this.state.stokadmin[index].stokadmin ? true : false
-              // }
+              disabled={val.qty >= val.stock ? true : false}
               onClick={() => this.onPlusClick(index)}
             >
               +
             </button>
           </td>
-          <td>{currencyFormatter(val.harga * val.qty)}</td>
+          <td>{currencyFormatter(val.price * val.qty)}</td>
           <td>
             <button
               className="btn btn-danger"
@@ -157,44 +199,75 @@ class Cart extends Component {
   //? cara dengan asyn await
 
   onCheckoutClick = async () => {
-    let iduser = this.props.dataUser.id;
-    //* data input to transaksi
-    let data = {
-      userId: this.props.dataUser.id,
-      tanggal: new Date(),
-      status: "belum bayar",
-      products: this.props.dataUser.cart,
-      bankId: 0,
-      bukti: "",
+    let idusers = this.props.dataUser.idusers;
+    let TokenAccess = localStorage.getItem("TA");
+    let options = {
+      headers: {
+        Authorization: "Bearer " + TokenAccess,
+      },
     };
-    //* post transaksi
-    await axios.post(`${API_URL}/transactions`, data);
-    //* edit stok products
-    var cart = this.props.dataUser.cart;
-    var Productsadmin = this.state.products;
-    for (let i = 0; i < cart.length; i++) {
-      for (let j = 0; j < Productsadmin.length; j++) {
-        if (cart[i].id === Productsadmin[j].id) {
-          let stokakhir = Productsadmin[j].stok - cart[i].qty;
-          await axios.patch(`${API_URL}/products/${Productsadmin[j].id}`, {
-            stok: stokakhir,
-          });
-        }
-      }
-    }
-    // kosongin cart
-    var res1 = await axios.patch(`${API_URL}/users/${iduser}`, { cart: [] });
-    // refresh cart dan tutup modal
-    this.props.CartAction(res1.data.cart);
+    let data = {
+      idusers,
+    };
+    const cart = await axios.put(`${API_URL}/trans/checkout`, data, options);
+    console.log(cart.data);
+    this.props.CartAction(cart.data);
     this.setState({ modal: false });
   };
 
+  //? cara dengan promise.all dan untuk membuat disable button
 
+  // onCheckoutClick = () => {
+
+  //   console.log(this.state);
+  //   let iduser = this.props.dataUser.id;
+  //   // data input to transaksi
+  //   let data = {
+  //     userId: this.props.dataUser.id,
+  //     tanggal: new Date(),
+  //     status: "belum bayar",
+  //     products: this.props.dataUser.cart,
+  //     bankId: 0,
+  //     bukti: "",
+  //   };
+
+  //   axios
+  //     .post(`${API_URL}/transactions`, data)
+  //     .then(() => {
+  //       axios
+  //         .patch(`${API_URL}/users/${iduser}`, { cart: [] })
+  //         .then((res1) => {
+  //           var stokadmin = this.state.stokadmin;
+  //           var cart = this.props.dataUser.cart;
+  //           var stokfetch = stokadmin.map((val, index) => {
+  //             // stockfetch type datanya adalah array
+  //             let stokakhir = val.stokadmin - cart[index].qty;
+  //             return axios.patch(`${API_URL}/products/${val.id}`, {
+  //               stok: stokakhir,
+  //             });
+  //           });
+  //           Promise.all(stokfetch)
+  //             .then(() => {
+  //               this.props.CartAction(res1.data.cart);
+  //               this.setState({ modal: false });
+  //             })
+  //             .catch((err) => {
+  //               console.log(err);
+  //             });
+  //         })
+  //         .catch((err) => {
+  //           console.log(err);
+  //         });
+  //     })
+  //     .catch((err) => {
+  //       console.log(err);
+  //     });
+  // };
 
   rendertotal = () => {
     let total = 0;
     this.props.dataUser.cart.forEach((val) => {
-      total += val.harga * val.qty;
+      total += val.price * val.qty;
     });
     return total;
   };
